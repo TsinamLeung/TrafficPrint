@@ -1,0 +1,189 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no, width=device-width">
+    <title>公交线路查询</title>
+    <link rel="stylesheet" href="https://a.amap.com/jsapi_demos/static/demo-center/css/demo-center.css"/> 
+    <style type="text/css">
+       html,body,#container{
+           height:100%;
+       }
+
+       .marker {
+            position: absolute;
+            color: #fff;
+            padding: 2px 4px;
+            box-shadow: 1px 1px 1px rgba(10, 10, 10, .2);
+            white-space: nowrap;
+            font-size: 8px;
+            font-family: "";
+            background-color: #25A5F7;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+<div id="container"></div>
+<div class="input-card" style='width:27rem;position: fixed;left: 0.5rem;bottom: 2rem;'>
+    <label style='color:grey'>公交綫路　Pannel</label>
+    <div class="input-item">
+            <div class="input-item-prepend"><span class="input-item-text" >綫路名稱</span></div>
+            <input id='BusLineName' type="text" value='' >
+            <select id="busSelect">
+                <option value ="NULL">從下拉菜單中選擇要在地圖上晝出的公交綫路圖</option>
+                <option value ="1">1字開頭的綫路</option>
+                <option value ="2">2字開頭的綫路</option>
+                <option value ="3">3字開頭的綫路</option>
+                <option value ="4">4字開頭的綫路</option>
+                <option value ="5">5字開頭的綫路</option>
+                <option value ="6">6字開頭的綫路</option>
+                <option value ="7">7字開頭的綫路</option>
+                <option value ="8">8字開頭的綫路</option>
+                <option value ="9">9字開頭的綫路</option>
+                <option value ="B">GBRT綫路</option>
+                <option value ="C">從化的綫路</option>
+                <option value ="D">拼音首D的綫路「大學城、東莞」</option>
+                <option value ="F">佛山/廣佛綫路</option>
+                <option value ="G">高峯快線</option>
+                <option value ="H">花都綫路</option>
+                <option value ="K">科學城及機場各快綫「空港快線」</option>
+                <option value ="L">旅游公交3綫</option>
+                <option value ="N">南沙綫路</option>
+                <option value ="P">番禺綫路</option>
+                <option value ="S">水巴及商務專線</option> 
+                <option value ="X">新塘路線</option> 
+                <option value ="Y">夜班車路線</option> 
+                <option value ="Z">增城路線</option> 
+            </select>
+    </div>
+    <table>
+      <td>
+        <input id="search" type="button" class="btn" value="添加路綫" />
+      </td>
+      <td>
+        <input id="clearM" type="button" class="btn" value="清空地圖" />
+      </td>
+      <td>
+        <input id="showAll" type="button" class="btn" value="顯示全部路綫" />
+      </td>
+      <td>
+        <input id="showLine" type="button" class="btn" value="顯示綫路名" />
+      </td>
+    </table>
+</div>
+
+<script type="text/javascript"
+            src="https://webapi.amap.com/maps?v=1.4.15&key=ee088abc17a02cbebe4786e06dbd11f9&plugin=AMap.LineSearch"></script>
+<script language="javascript">
+    /*
+     * 该示例主要流程分为三个步骤
+     * 1. 首先调用公交路线查询服务(lineSearch)
+     * 2. 根据返回结果解析，输出解析结果(lineSearch_Callback)
+     * 3. 在地图上绘制公交线路()
+     */
+    var showLine = false;
+    var map = new AMap.Map("container", {
+        resizeEnable: true,
+        center: [113.307428, 23.10923],//地图中心点
+        zoom: 13, //地图显示的缩放级别
+        mapStyle: 'amap://styles/light'
+    });
+    var linesearch;
+    /*公交线路查询*/
+    function lineSearch() {
+        var busLineName = document.getElementById('BusLineName').value;
+        if(!busLineName) return;
+        //实例化公交线路查询类，只取回一条路线
+        if(!linesearch){
+            linesearch = new AMap.LineSearch({
+                pageIndex: 1,
+                city: '广州',
+                pageSize: 2,
+                extensions: 'all'
+            });
+        }
+        linesearch.search(busLineName, function(status, result) {
+            if (status === 'complete' && result.info === 'OK') {
+                lineSearch_Callback(result,busLineName);
+            } else {
+                console.log(busLineName + " Not found");
+                console.log(result);
+            }
+        });
+    }
+    /*公交路线查询服务返回数据解析概况*/
+    function lineSearch_Callback(data, busLineName) {
+        var lineArr = data.lineInfo;
+        var lineNum = data.lineInfo.length;
+        if (lineNum == 0) {
+        } else {
+            var moreline = "";
+            for (var i = 0; i < lineNum; i++) {
+                var pathArr = lineArr[i].path;
+                var stops = lineArr[i].via_stops;
+                var startPot = stops[parseInt(stops.length / 2)].location;
+                var endPot = stops[stops.length - 1].location;
+                drawbusLine(startPot, endPot, pathArr, busLineName + "_" + String(i));
+            }
+        }
+    }
+    /*绘制路线*/
+    function drawbusLine(startPot, endPot, BusArr, data) {
+        //绘制起点，终点
+        if(showLine){
+            new AMap.Marker({
+                map: map,
+                position: startPot, //基点位置
+                content: "<div class=\"marker\"><span>" + data + "</div></span>",
+                zIndex: 10
+            });
+        }
+        //绘制乘车的路线
+        busPolyline = new AMap.Polyline({
+            map: map,
+            path: BusArr,
+            strokeColor: "#ff7f27",//线颜色
+            strokeOpacity: 0.8,//线透明度
+            isOutline:true,
+            outlineColor:'white',
+            strokeWeight: 5//线宽
+        });
+        map.setFitView();
+    }
+    
+    function drawAllRoute(){
+        var busLineInput = document.getElementById('BusLineName');
+        var btn = document.getElementById('showAll');
+        btn.value = "正在處理路綫";
+        let req = new XMLHttpRequest();
+        req.open("GET","buslist" + document.getElementById("busSelect").value + ".json",false);
+        req.send();
+        if(req.status == 200){
+            let buslist = JSON.parse(req.responseText);
+            for(let i = 0;i < buslist.length;i++){
+                busLineInput.value = buslist[i];
+                lineSearch();
+            }
+        }else{
+            alert("获取公交列表失敗");
+        }
+        btn.value = "顯示全部路綫";
+    }
+    function sleep(numberMillis) {
+        var now = new Date();
+        var exitTime = now.getTime() + numberMillis;
+        while (true) {
+            now = new Date();
+            if (now.getTime() > exitTime)
+                return;
+        }
+    }
+    document.getElementById('search').onclick = lineSearch;
+    document.getElementById('clearM').addEventListener('click',function(){ map.clearMap(); });
+    document.getElementById('showAll').addEventListener('click',drawAllRoute);
+    document.getElementById('showLine').addEventListener('click',function(){showLine = !showLine;if(showLine) document.getElementById('showLine').value="隠藏路綫名";　else document.getElementById('showLine').value="顯示綫路名";});
+</script>
+</body>
+</html>
