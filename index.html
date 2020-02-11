@@ -69,7 +69,7 @@
         <input id="showAll" type="button" class="btn" value="顯示全部路綫" />
       </td>
       <td>
-        <input id="showLine" type="button" class="btn" value="顯示綫路名" />
+        <input id="showLine" type="button" class="btn" value="隠藏綫路名" />
       </td>
     </table>
 </div>
@@ -83,7 +83,7 @@
      * 2. 根据返回结果解析，输出解析结果(lineSearch_Callback)
      * 3. 在地图上绘制公交线路()
      */
-    var showLine = false;
+    var showLine = true;
     var map = new AMap.Map("container", {
         resizeEnable: true,
         center: [113.307428, 23.10923],//地图中心点
@@ -131,12 +131,13 @@
     }
     /*绘制路线*/
     function drawbusLine(startPot, endPot, BusArr, data) {
+        let color = randomHexColor();
         //绘制起点，终点
         if(showLine){
             new AMap.Marker({
                 map: map,
                 position: startPot, //基点位置
-                content: "<div class=\"marker\"><span>" + data + "</div></span>",
+                content: "<div class=\"marker\" style=\" background-color:" + color + " \" ><span>" + data + "</div></span>",
                 zIndex: 10
             });
         }
@@ -144,7 +145,7 @@
         busPolyline = new AMap.Polyline({
             map: map,
             path: BusArr,
-            strokeColor: "#ff7f27",//线颜色
+            strokeColor: color,//线颜色
             strokeOpacity: 0.8,//线透明度
             isOutline:true,
             outlineColor:'white',
@@ -171,14 +172,8 @@
         }
         btn.value = "顯示全部路綫";
     }
-    function sleep(numberMillis) {
-        var now = new Date();
-        var exitTime = now.getTime() + numberMillis;
-        while (true) {
-            now = new Date();
-            if (now.getTime() > exitTime)
-                return;
-        }
+    function randomHexColor() { //随机生成十六进制颜色
+        return '#' + ('00000' + (Math.random() * 0x1000000 << 0).toString(16)).substr(-6);
     }
     document.getElementById('search').onclick = lineSearch;
     document.getElementById('clearM').addEventListener('click',function(){ map.clearMap(); });
