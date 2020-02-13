@@ -1,0 +1,80 @@
+[
+  {
+    "city": "canton",
+    "buslist": [
+      {
+        "name": "BRT綫路",
+        "path": "buslist/canton/buslistB.json"
+      },
+      {
+        "name": "科學城及空港快線",
+        "path": "buslist/canton/buslistK.json"
+      },
+      {
+        "name": "水巴及商務專線",
+        "path": "buslist/canton/buslistS.json"
+      },
+      {
+        "name": "高峯快線",
+        "path": "buslist/canton/buslistK.json"
+      },
+      {
+        "name": "夜班車",
+        "path": "buslist/canton/buslistY.json"
+      },
+      {
+        "name": "白雲區線路",
+        "path": "buslist/canton/busline_BaakWan.json"
+      },
+      {
+        "name": "從化區綫路",
+        "path": "buslist/canton/busline_CungFaa.json"
+      },
+      {
+        "name": "花都區綫路",
+        "path": "buslist/canton/busline_FaaDu.json"
+      },
+      {
+        "name": "海珠區綫路",
+        "path": "buslist/canton/busline_HoiZhyu.json"
+      },
+      {
+        "name": "越秀區綫路",
+        "path": "buslist/canton/busline_JyutSau.json"
+      },
+      {
+        "name": "荔灣區綫路",
+        "path": "buslist/canton/busline_LaiWaan.json"
+      },
+      {
+        "name": "南沙區綫路",
+        "path": "buslist/canton/busline_NaamShaa.json"
+      },
+      {
+        "name": "番禺區綫路",
+        "path": "buslist/canton/busline_PunNjyu.json"
+      },
+      {
+        "name": "天河區綫路",
+        "path": "buslist/canton/busline_TinHo.json"
+      },
+      {
+        "name": "黃埔區綫路",
+        "path": "buslist/canton/busline_WongBou.json"
+      },
+      {
+        "name": "增城區綫路",
+        "path": "buslist/canton/busline_ZangShing.json"
+      }
+    ]
+  },
+  {
+    "city": "template",
+    "buslist": [
+      {
+        "name": "列表中顯示的名字",
+        "path": "相對路径指向綫路名的JSON"
+      }
+    ]
+  }
+]

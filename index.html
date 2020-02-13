@@ -18,11 +18,7 @@
       integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh"
       crossorigin="anonymous"
     />
-    <script
-      src="https://cdn.jsdelivr.net/npm/jquery@3.4.1/dist/jquery.slim.min.js"
-      integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n"
-      crossorigin="anonymous"
-    ></script>
+    <script src="https://ajax.aspnetcdn.com/ajax/jquery/jquery-3.4.1.min.js"></script>
     <script
       src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"
       integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo"
@@ -100,34 +96,7 @@
           <span class="input-item-text">綫路名稱</span>
         </div>
         <input id="BusLineName" type="text" value="" />
-        <select id="busSelect">
-          <option value="NULL"
-            >從下拉菜單中選擇要在地圖上晝出的公交綫路圖</option
-          >
-          <option value="1">1字開頭的綫路</option>
-          <option value="2">2字開頭的綫路</option>
-          <option value="3">3字開頭的綫路</option>
-          <option value="4">4字開頭的綫路</option>
-          <option value="5">5字開頭的綫路</option>
-          <option value="6">6字開頭的綫路</option>
-          <option value="7">7字開頭的綫路</option>
-          <option value="8">8字開頭的綫路</option>
-          <option value="9">9字開頭的綫路</option>
-          <option value="B">GBRT綫路</option>
-          <option value="C">從化的綫路</option>
-          <option value="D">拼音首D的綫路「大學城、東莞」</option>
-          <option value="F">佛山/廣佛綫路</option>
-          <option value="G">高峯快線</option>
-          <option value="H">花都綫路</option>
-          <option value="K">科學城及機場各快綫「空港快線」</option>
-          <option value="L">旅游公交3綫</option>
-          <option value="N">南沙綫路</option>
-          <option value="P">番禺綫路</option>
-          <option value="S">水巴及商務專線</option>
-          <option value="X">新塘路線</option>
-          <option value="Y">夜班車路線</option>
-          <option value="Z">增城路線</option>
-        </select>
+        <select id="busSelect"></select>
       </div>
       <table>
         <td>
@@ -171,8 +140,44 @@
     ></script>
     <script src="https://webapi.amap.com/ui/1.0/main.js"></script>
     <script src="//webapi.amap.com/ui/1.0/main-async.js"></script>
-
     <script language="javascript">
+      let currentCity = "廣州";
+      let currentList;
+      const busSelect = $("#busSelect");
+
+      function updateBusSelection() {
+        $.getJSON("cityListIndex.json", data => {
+          let isFind = false;
+          for (let i = 0; i < data.length; i++) {
+            if (data[i].name == currentCity) {
+              isFind = true;
+              currentList = data[i].listname;
+              break;
+            }
+          }
+          if (isFind) {
+            $.getJSON("busListIndex.json", result => {
+              for (let i = 0; i < result.length; i++) {
+                if (result[i].city == currentList) {
+                  busSelect.empty();
+                  result[i].buslist.forEach((item) => {
+                    let option = $("<option>");
+                    option.attr("value", item.path);
+                    option.text(item.name);
+                    busSelect.append(option);
+                  });
+                  break;
+                }
+              }
+            });
+          } else {
+            alert("cityListIndex.json中無當前城市");
+          }
+        });
+      }
+      $(document).ready( () => {
+        updateBusSelection();
+      });
       //繪制隊列
       let routeQueue = Array();
       setInterval(() => {
@@ -239,7 +244,7 @@
         if (!linesearch) {
           linesearch = new AMap.LineSearch({
             pageIndex: 1,
-            city: "广州",
+            city: currentCity,
             pageSize: 2,
             extensions: "all"
           });
@@ -250,7 +255,7 @@
           } else {
             console.log(busLineName + " Not found");
           }
-        //   console.log(result);
+          //   console.log(result);
         });
       }
       /*公交路线查询服务返回数据解析概况*/
@@ -318,10 +323,11 @@
         //绘制起点，终点
         // console.log(BusInfo);
         if (showLine) {
+          console.log(BusInfo);
           new AMap.Marker({
             map: map,
             position:
-              BusInfo.via_stops[parseInt(BusInfo.stopsLength / 2) - 2].location, //基点位置
+              BusInfo.via_stops[parseInt(BusInfo.stopsLength / 2) - 1].location, //基点位置
             content:
               '<div class="marker"' +
               'style="background-color:' +
@@ -336,40 +342,22 @@
             zIndex: 10
           });
           //绘制乘车的路线
+        }
           lineDataSet.push(BusInfo);
           pIns.setData(lineDataSet);
-          // busPolyline = new AMap.Polyline({
-          //     map: map,
-          //     path: BusInfo.pathArr,
-          //     strokeColor: BusInfo.color,//线颜色
-          //     strokeOpacity: 0.8,//线透明度
-          //     isOutline:true,
-          //     outlineColor:'white',
-          //     strokeWeight: 5//线宽
-          // });
-        }
       }
 
       function drawAllRoute() {
-        var busLineInput = document.getElementById("BusLineName");
-        var btn = document.getElementById("showAll");
-        btn.value = "正在處理路綫";
-        let req = new XMLHttpRequest();
-        req.open(
-          "GET",
-          "buslist" + document.getElementById("busSelect").value + ".json",
-          false
-        );
-        req.send();
-        if (req.status == 200) {
-          let buslist = JSON.parse(req.responseText);
-          buslist.forEach(element => {
-            routeQueue.push(element);
-          });
-        } else {
-          alert("获取公交列表失敗");
-        }
-        btn.value = "顯示全部路綫";
+        $.getJSON(busSelect.val(),(result,status) => {
+          if(status == "success"){
+            $.each(result,(index, item) => {
+              routeQueue.push(removeAnnotation(item));
+            });
+          }else{
+            alert("获取公交綫路失敗");
+            console.log(status);
+          }
+        });
       }
       function randomHexColor() {
         //随机生成十六进制颜色
@@ -404,6 +392,7 @@
 
     <!-- 車站蒐尋碼從這裏開始 -->
     <script>
+      // 該方法内含去除（停运）字样的处理 見下面return null
       function removeAnnotation(word) {
         if (word.match(/^\([^()]+\)[^()]+/)) return null;
         const reg = new RegExp(/\(.+\)$/);
@@ -444,7 +433,7 @@
             stationS = new AMap.StationSearch({
               pageIndex: 1, //页码，默认值为1
               pageSize: 50, //单页显示结果条数，默认值为20，最大值为50
-              city: "020" //限定查询城市，可以是城市名（中文/中文全拼）、城市编码，默认值为『全国』
+              city: currentCity //限定查询城市，可以是城市名（中文/中文全拼）、城市编码，默认值为『全国』
             });
           });
         }
