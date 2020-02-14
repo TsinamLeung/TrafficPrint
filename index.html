@@ -18,7 +18,7 @@
       integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh"
       crossorigin="anonymous"
     />
-    <script src="https://ajax.aspnetcdn.com/ajax/jquery/jquery-3.4.1.min.js"></script>
+    <script src="https://cdn.bootcss.com/jquery/3.4.1/jquery.min.js"></script>
     <script
       src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"
       integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo"
@@ -69,6 +69,101 @@
       <ul class="list-group "></ul>
     </div>
     <!-- Result List End -->
+    <!-- toolBar -->
+    <div class="overflow-auto fixed-top position-fixed m-2 w-50 h-75 text-center" style="left:50%">
+      <div class="collapse" id="toolBar">
+        <div class="accordion" id="toolBarList"></div>
+      </div>
+      <button type="button" class="btn btn-primary" data-target="#toolBar" data-toggle="collapse" aria-pressed="false">
+        工具欄
+      </button>
+    </div>
+    <!-- toolbar script -->
+    <script>
+      let updateFlag = false;
+      $('#toolBarList').click((event) => {
+        let node = event.toElement;
+        if(node.tagName == "BUTTON") {
+          let type = node.getAttribute('type');
+          let target = node.getAttribute('target');
+          if(!target)
+            return;
+          let index = parseInt(target.replace(/^.+_/,""))
+          if(type == "sl"){
+            lineDataSet[index].marker.show();
+          }else if(type == 'hl'){
+            lineDataSet[index].marker.hide();
+          }else if(type == 'dl'){
+            $('#tool_list_' + String(index)).remove();
+            map.remove(lineDataSet[index].marker);
+            lineDataSet.splice(index,1);
+            pIns.setData(lineDataSet);
+          }
+        }
+      });
+      function cleanToolBar() { $('#toolBarList').empty();}
+      // 添加線路到工具欄
+      function addToToolBar(busInfo, indexOfbus) {
+        let body = $('<div class="card">').attr('id','tool_list_' + String(indexOfbus) );
+        let title = $('<div class="card-header .bglight row">');
+        let sign = $('<div class="ml-2 m-1 mx-1" style="border-radius:1rem;height:3rem;width:3rem;">').css('background-color',busInfo.color);
+        let headButton = 
+        $('<button class="col btn btn-outline-dark text-left mx-4" type="button" data-toggle="collapse">')
+          .attr('data-target','#detail_' + indexOfbus)
+          .text(busInfo.busName);
+        title.append(sign);
+        title.append(headButton);
+        body.append(title);
+        let detailHead = $('<div class ="collapse" data-parent="#toolBarList">').attr('id','detail_' + indexOfbus);
+        let detailBody = $('<div class="card-body">');
+        let detailList = $('<div class="list-group">');
+        detailList.append(createInfoList('綫路全稱',busInfo.busAlias));
+        detailList.append(createInfoList('所屬公司',busInfo.company));
+        detailList.append(createInfoList('綫路長度',String(busInfo.distance) + " 公里"));
+        detailList.append(createInfoList('始發時間',String(busInfo.stime)) );
+        detailList.append(createInfoList('末班時間',String(busInfo.etime)) );
+        detailList.append($('<a href="#" class="btn btn-outline-primary list-group-item d-flex" data-toggle="collapse">經停站點「點擊展開</a>').attr('data-target','#via_stops_' + String(indexOfbus)));
+        let stopsList = $('<div class="collapse">').attr('id','via_stops_' + String(indexOfbus));
+        busInfo.via_stops.forEach((element) => {
+          let name = element.name;
+          stopsList.append(createList(name));
+        });
+        detailList.append(stopsList);
+        detailBody.append(detailList);
+        let buttonGroup = $('<span class="mt-2 row">');
+        buttonGroup.append(createButton("sl","顯示標籤"));
+        buttonGroup.append(createButton("hl","隠藏標籤"));
+        buttonGroup.append(createButton("dl","刪除線路"));
+        detailBody.append(buttonGroup);
+        detailHead.append(detailBody);
+        body.append(detailHead);
+        function createButton(type, content){
+          let target = "#tool_list_" + String(indexOfbus);
+          return $('<button class="btn btn-outline-info col mx-2">').attr('type',type).attr('target',target).text(content);
+        }
+        function createList(content) {
+          return $('<a href="#" class="list-group-item list-group-item-action">').text(content);
+        }
+        function createInfoList(title, content) {
+          let t = $('<h5 class="mb-1">').text(title);
+          let c = $('<p class="mb-1">').text(content);
+          return $('<a href="#" class="list-group-item list-group-item-action">').append($('<div class="d-flex w-100 justify-content-between">').append(t,c));
+        }
+        $('#toolBarList').append(body);
+      }
+    </script>
+    <!-- toolBar end -->
+    <!-- info -->
+    <div class="card position-fixed fixed-top ml-2 w-25" id="stateDiv" style="top: 40%;display: none;">
+      <div class="card-body">
+        <div class="spinner-border  text-success" role="status">
+         <span class="sr-only">Loading...</span>
+        </div>
+        <h5 class="card-title">準備數據中</h5>
+        <p class="card-text" id='stateText'>Hello</p>
+      </div>
+    </div>
+    <!-- info End -->
     <!-- Pannel -->
     <div
       class="input-card"
@@ -178,35 +273,49 @@
       $(document).ready( () => {
         updateBusSelection();
       });
+      function sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms))
+      }
       //繪制隊列
       let routeQueue = Array();
-      setInterval(() => {
+      setInterval(async () => {
         if (routeQueue.length > 0) {
           routeQueue = Array.from([...new Set(routeQueue)]); //去重
           let count = 0;
           while (routeQueue.length > 0) {
             let line = routeQueue.shift();
             // console.log(line);
+            await sleep(100);
             if (line != null) lineSearch(line);
             else continue;
             count++;
-            if (count == 40) break;
           }
         }
-      }, 1000);
+      }, 2500);
       let drawQueue = Array();
-      setInterval(() => {
+      setInterval(async () => {
         if(drawQueue.length > 0) {
           let count = 0;
+          drawQueue = Array.from([...new Set(drawQueue)]); //去重
           while(drawQueue.length > 0) {
             count++;
+            $('#stateText').text('前方還有' + drawQueue.length + '條綫路')
             let info = drawQueue.shift();
-            drawbusLine(info);
-            if(count == 20) break;
+            drawLabel(info);
+            await sleep(20);
           }
+          updateFlag = true;
+        }else if(updateFlag) {
+          $('#stateDiv').css('display','none');
+          cleanToolBar();
           pIns.setData(lineDataSet);
-        }else{}
-      }, 1000);
+          $.each(lineDataSet,(index,info) => {
+            // console.log(index,info);
+            addToToolBar(info, index);
+          });
+          updateFlag = false;
+        }
+      }, 1500);
       function Line(
         busName,
         busAlias,
@@ -231,6 +340,10 @@
         this.stopsLength = via_stops.length;
         this.startPot = via_stops[0].location;
         this.endPot = via_stops[via_stops.length - 1];
+        this.marker;
+        this.bindMarker = (marker) => {
+            this.marker = marker;
+        };
       }
 
       lineDataSet = Array();
@@ -261,10 +374,13 @@
           });
         }
         linesearch.search(busLineName, function(status, result) {
+          $('#stateDiv').css('display','block');
           if (status === "complete" && result.info === "OK") {
             lineSearch_Callback(result, busLineName);
           } else {
             console.log(busLineName + " Not found");
+            $('#BusLineName').val("沒有" + busLineName);
+            $('#stateDiv').css('display','none');
           }
           //   console.log(result);
         });
@@ -277,8 +393,7 @@
         } else {
           for (var i = 0; i < lineNum; i++) {
             let color = randomHexColor();
-            drawQueue.push(
-              new Line(
+            let info = new Line(
                 busLineName + "_" + String(i),
                 lineArr[i].name,
                 lineArr[i].company,
@@ -288,8 +403,9 @@
                 lineArr[i].via_stops,
                 lineArr[i].path,
                 color
-              )
-            );
+              );
+            lineDataSet.push(info);
+            drawQueue.push(info);
           }
         }
       }
@@ -330,31 +446,32 @@
         }
       });
       /*绘制路线*/
-      function drawbusLine(BusInfo) {
+      function drawLabel(busInfo) {
         //绘制起点，终点
-        // console.log(BusInfo);
-        if (showLine) {
-          // console.log(BusInfo);
-          new AMap.Marker({
+        // console.log(busInfo);
+          // console.log(busInfo);
+          busInfo.bindMarker(new AMap.Marker( {
             map: map,
             position:
-              BusInfo.via_stops[parseInt(BusInfo.stopsLength / 2) - 1].location, //基点位置
+              busInfo.via_stops[parseInt(busInfo.stopsLength / 2) - 1].location, //基点位置
             content:
               '<div class="marker"' +
               'style="background-color:' +
-              BusInfo.color +
+              busInfo.color +
               ";" +
               "color:" +
-              contrastHexColor(BusInfo.color) +
+              contrastHexColor(busInfo.color) +
               '">' +
               "<span>" +
-              BusInfo.busName +
+              busInfo.busName +
               "</div></span>",
             zIndex: 10
-          });
+          }) );
+          busInfo.marker.setDraggable(true);
+          if(showLine) busInfo.marker.show();
+          else busInfo.marker.hide()
           //绘制乘车的路线
-        }
-          lineDataSet.push(BusInfo);
+        
       }
 
       function drawAllRoute() {
@@ -383,10 +500,11 @@
       }
 
       $("#search").click(function() {
-        routeQueue.push($("#BusLineName")[0].value);
+        routeQueue.push($("#BusLineName").val());
       });
       document.getElementById("clearM").addEventListener("click", function() {
         map.clearMap();
+        cleanToolBar();
         lineDataSet.length = 0;
         pIns.setData(lineDataSet);
       });
