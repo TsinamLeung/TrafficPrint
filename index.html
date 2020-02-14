@@ -190,12 +190,23 @@
             if (line != null) lineSearch(line);
             else continue;
             count++;
-            if (count == 30) break;
+            if (count == 40) break;
           }
-          map.setFitView();
         }
       }, 1000);
-
+      let drawQueue = Array();
+      setInterval(() => {
+        if(drawQueue.length > 0) {
+          let count = 0;
+          while(drawQueue.length > 0) {
+            count++;
+            let info = drawQueue.shift();
+            drawbusLine(info);
+            if(count == 20) break;
+          }
+          pIns.setData(lineDataSet);
+        }else{}
+      }, 1000);
       function Line(
         busName,
         busAlias,
@@ -266,7 +277,7 @@
         } else {
           for (var i = 0; i < lineNum; i++) {
             let color = randomHexColor();
-            drawbusLine(
+            drawQueue.push(
               new Line(
                 busLineName + "_" + String(i),
                 lineArr[i].name,
@@ -323,7 +334,7 @@
         //绘制起点，终点
         // console.log(BusInfo);
         if (showLine) {
-          console.log(BusInfo);
+          // console.log(BusInfo);
           new AMap.Marker({
             map: map,
             position:
@@ -344,7 +355,6 @@
           //绘制乘车的路线
         }
           lineDataSet.push(BusInfo);
-          pIns.setData(lineDataSet);
       }
 
       function drawAllRoute() {
